@@ -1,0 +1,121 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Murkrow\Rag\Tests;
+
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use PDO;
+use Throwable;
+
+/**
+ * Base case for the tests that must run against real PostgreSQL and pgvector.
+ *
+ * Everything else runs on SQLite for speed, but the pgvector driver's whole
+ * value is that the database does the ranking -- an in-memory substitute would
+ * assert nothing about the SQL that actually ships. These tests skip
+ * themselves when no PostgreSQL is reachable, so the suite stays runnable
+ * anywhere.
+ */
+abstract class PostgresTestCase extends TestCase
+{
+    protected function setUp(): void
+    {
+        if (! self::postgresAvailable()) {
+            $this->markTestSkipped(
+                'No PostgreSQL with pgvector reachable at '.self::dsn().'. '
+                .'Set RAG_TEST_PG_HOST / RAG_TEST_PG_PORT to point at one.'
+            );
+        }
+
+        parent::setUp();
+    }
+
+    protected function defineEnvironment($app): void
+    {
+        parent::defineEnvironment($app);
+
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'pgsql',
+            'host' => self::host(),
+            'port' => self::port(),
+            'database' => env('RAG_TEST_PG_DATABASE', 'rag_test'),
+            'username' => env('RAG_TEST_PG_USERNAME', 'rag'),
+            'password' => env('RAG_TEST_PG_PASSWORD', 'rag'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ]);
+
+        // The real driver, against the real extension.
+        $app['config']->set('rag.vector.driver', 'pgvector');
+        $app->forgetInstance(\Murkrow\Rag\Contracts\VectorStore::class);
+        $app->singleton(
+            \Murkrow\Rag\Contracts\VectorStore::class,
+            static fn (): \Murkrow\Rag\Contracts\VectorStore => new \Murkrow\Rag\VectorStores\PgVectorStore,
+        );
+    }
+
+    /**
+     * Postgres keeps its schema between runs, so start from a clean slate.
+     */
+    protected function createHostSchema(): void
+    {
+        DB::statement('DROP SCHEMA public CASCADE');
+        DB::statement('CREATE SCHEMA public');
+        DB::statement('CREATE EXTENSION IF NOT EXISTS vector');
+
+        Schema::create('test_books', function (Blueprint $table): void {
+            $table->id();
+            $table->string('title');
+            $table->string('author')->nullable();
+            $table->boolean('bad_ocr')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('test_book_pages', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('test_book_id')->constrained('test_books')->cascadeOnDelete();
+            $table->unsignedInteger('number');
+            $table->longText('content');
+            $table->timestamps();
+        });
+    }
+
+    protected static function host(): string
+    {
+        return (string) env('RAG_TEST_PG_HOST', 'rag-test-pg');
+    }
+
+    protected static function port(): int
+    {
+        return (int) env('RAG_TEST_PG_PORT', 5432);
+    }
+
+    protected static function dsn(): string
+    {
+        return self::host().':'.self::port();
+    }
+
+    protected static function postgresAvailable(): bool
+    {
+        try {
+            $pdo = new PDO(
+                sprintf('pgsql:host=%s;port=%d;dbname=%s', self::host(), self::port(), env('RAG_TEST_PG_DATABASE', 'rag_test')),
+                (string) env('RAG_TEST_PG_USERNAME', 'rag'),
+                (string) env('RAG_TEST_PG_PASSWORD', 'rag'),
+                [PDO::ATTR_TIMEOUT => 2, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+            );
+
+            $pdo->exec('CREATE EXTENSION IF NOT EXISTS vector');
+
+            return $pdo->query("SELECT 1 FROM pg_extension WHERE extname = 'vector'")->fetchColumn() !== false;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+}

@@ -1,0 +1,10 @@
+# Keep distribution tarballs lean: exclude development-only paths.
+/.github            export-ignore
+/tests              export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/CLAUDE.md          export-ignore
+/CONTRIBUTING.md    export-ignore
+/phpunit.xml.dist   export-ignore
+
+*.php diff=php

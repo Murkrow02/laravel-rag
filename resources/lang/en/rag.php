@@ -1,0 +1,112 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'refusal' => 'I could not find this information in the indexed documents.',
+
+    'mcp' => [
+        'instructions' => <<<'TEXT'
+            This server exposes a private, indexed knowledge base through semantic search.
+
+            Recommended workflow:
+              1. Read the "documents" resource first to discover which documents exist and
+                 what their identifiers are.
+              2. Call the search tool with a natural-language query, narrowing by source,
+                 document id or position range when you already know where to look.
+              3. Use the fetch tool to read a contiguous span around a promising result.
+
+            Every result carries the document it came from and its position range, so quote
+            them when you report an answer. The corpus may contain OCR errors: reproduce
+            what the text says rather than correcting it.
+            TEXT,
+        'search_description' => 'Semantic search over the indexed knowledge base. Returns the most relevant passages with their document and position.',
+        'fetch_description' => 'Read a contiguous span of an indexed document by position (for example a page range).',
+        'answer_description' => 'Answer a question from the knowledge base, returning a grounded answer with citations.',
+        'documents_description' => 'The documents currently indexed, with their identifiers, titles and coverage.',
+    ],
+
+    'chat' => [
+        'title' => 'Knowledge assistant',
+        'untitled' => 'Untitled chat',
+        'new_chat' => 'New chat',
+        'search_placeholder' => 'Search chats',
+        'toggle_theme' => 'Switch theme',
+        'toggle_sidebar' => 'Show or hide the sidebar',
+        'settings' => 'Advanced settings',
+        'settings_sub' => 'You do not need any of this to ask a question. Change it only if the answers are missing something.',
+        'model' => 'Model',
+        'model_help' => 'A larger model reasons better and costs more per answer.',
+        'sources_field' => 'Where to search',
+        'sources_help' => 'Leave everything unticked to search the whole knowledge base.',
+        'top_k' => 'Passages retrieved',
+        'top_k_help' => 'How many excerpts are handed to the model. More context, more tokens.',
+        'min_score' => 'Minimum similarity',
+        'min_score_help' => 'Excerpts scoring below this are discarded before the model sees them.',
+        'retrieval_only' => 'Search only, do not write an answer',
+        'retrieval_only_help' => 'Shows the matching passages without calling the model. No cost.',
+        'retrieval_only_answer' => '{0}No passage matched.|{1}One matching passage. Open the sources to read it.|[2,*]:count matching passages. Open the sources to read them.',
+        'sources' => 'Sources',
+        'close' => 'Close',
+        'reset' => 'Reset',
+        'cancel' => 'Cancel',
+        'save' => 'Save',
+        'send' => 'Send',
+        'placeholder' => 'Ask a question about the documents...',
+        'hint' => 'Answers are drawn from the indexed documents and always cite the passage they come from.',
+        'empty_title' => 'What would you like to know?',
+        'empty_body' => 'Ask in your own words. Full questions work considerably better than keywords.',
+        'suggestions' => [],
+
+        // Rendered in the browser by rag-chat.js.
+        'js' => [
+            'untitled' => 'Untitled chat',
+            'newChat' => 'New chat',
+            'noThreads' => 'No chats yet',
+            'noResults' => 'Nothing matches',
+            'totalSpend' => 'Total',
+            'copy' => 'Copy',
+            'sources' => 'Sources',
+            'helpful' => 'Helpful',
+            'notHelpful' => 'Not helpful',
+            'showMore' => 'Show the whole passage',
+            'showLess' => 'Show less',
+            'openSource' => 'Open the source',
+            'passageCount' => ':total passages, :cited cited',
+            'refusalHint' => 'Try rephrasing the question, or widen the sources under advanced settings.',
+            'failed' => 'The query failed.',
+            'stopped' => 'Stopped.',
+            'stop' => 'Stop',
+            'send' => 'Send',
+            'confirmDelete' => 'Delete this chat and its answers?',
+            'rename' => 'Rename',
+            'pin' => 'Pin',
+            'delete' => 'Delete',
+            'allSources' => 'All sources',
+            'defaultModel' => 'Default model',
+            'retrievalOnly' => 'Search only',
+            'groups' => [
+                'pinned' => 'Pinned',
+                'today' => 'Today',
+                'yesterday' => 'Yesterday',
+                'week' => 'Last 7 days',
+                'older' => 'Older',
+            ],
+        ],
+    ],
+
+    'runs' => [
+        'label' => 'Ingestion run',
+        'plural' => 'Ingestion runs',
+    ],
+
+    'documents' => [
+        'label' => 'Document',
+        'plural' => 'Documents',
+    ],
+
+    'queries' => [
+        'label' => 'Query',
+        'plural' => 'Queries',
+    ],
+];

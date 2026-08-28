@@ -1,0 +1,81 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use {{ model }};
+use Murkrow\Rag\Sources\EloquentSource;
+use Murkrow\Rag\Sources\Filter;
+use Murkrow\Rag\Sources\PositionLabels;
+use Murkrow\Rag\Sources\SegmentMap;
+
+/**
+ * Knowledge source: {{ label }}.
+ *
+ * Register it by adding {{ class }}::class to the `sources` array in
+ * config/rag.php, then run `php artisan rag:ingest {{ key }}`.
+ */
+final class {{ class }} extends EloquentSource
+{
+    public function key(): string
+    {
+        return '{{ key }}';
+    }
+
+    public function label(): string
+    {
+        return '{{ label }}';
+    }
+
+    public function icon(): ?string
+    {
+        return 'heroicon-o-book-open';
+    }
+
+    protected function model(): string
+    {
+        return {{ modelClass }}::class;
+    }
+
+    /**
+     * The column shown as the document title, and the attributes copied onto
+     * the document so retrieval can filter and cite by them.
+     */
+    protected function titleColumn(): ?string
+    {
+        return 'title';
+    }
+
+    protected function metadata(): array
+    {
+        return [];
+    }
+
+    /**
+     * Where the ordered text lives. `position` is what citations render, so
+     * prefer a number a reader recognises over a row id.
+     */
+    protected function segmentMap(): SegmentMap
+    {
+        return SegmentMap::relation('{{ relation }}', text: '{{ text }}', position: '{{ position }}');
+    }
+
+    /**
+     * Narrow what a run processes. The same declaration drives
+     * `rag:ingest --filter=name:value` and the Filament ingestion form.
+     */
+    protected function filters(): iterable
+    {
+        return [
+            Filter::ids('ids', 'id', label: 'Specific IDs'),
+            Filter::range('id_range', 'id', label: 'ID range'),
+            Filter::like('title', label: 'Title contains'),
+        ];
+    }
+
+    protected function positionLabels(): PositionLabels
+    {
+        return new PositionLabels('{{ positionLabel }}', '{{ positionLabelSingle }}');
+    }
+}

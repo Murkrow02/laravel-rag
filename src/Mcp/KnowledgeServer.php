@@ -1,0 +1,62 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Murkrow\Rag\Mcp;
+
+use Laravel\Mcp\Server;
+use Laravel\Mcp\Server\Attributes\Version;
+use Murkrow\Rag\Mcp\Prompts\GroundedAnswerPrompt;
+use Murkrow\Rag\Mcp\Resources\DocumentsResource;
+use Murkrow\Rag\Mcp\Tools\AnswerQuestionTool;
+use Murkrow\Rag\Mcp\Tools\FetchDocumentTool;
+use Murkrow\Rag\Mcp\Tools\SearchKnowledgeTool;
+
+/**
+ * Exposes the knowledge base to MCP clients.
+ *
+ * The resource matters as much as the tools: a client that can list the
+ * indexed documents first can then scope its searches to the right one instead
+ * of guessing identifiers, which is the difference between a useful tool and
+ * one the model gives up on.
+ */
+#[Version('1.0.0')]
+class KnowledgeServer extends Server
+{
+    /**
+     * @var array<int, class-string<\Laravel\Mcp\Server\Tool>>
+     */
+    protected array $tools = [
+        SearchKnowledgeTool::class,
+        FetchDocumentTool::class,
+        AnswerQuestionTool::class,
+    ];
+
+    /**
+     * @var array<int, class-string<\Laravel\Mcp\Server\Resource>>
+     */
+    protected array $resources = [
+        DocumentsResource::class,
+    ];
+
+    /**
+     * @var array<int, class-string<\Laravel\Mcp\Server\Prompt>>
+     */
+    protected array $prompts = [
+        GroundedAnswerPrompt::class,
+    ];
+
+    public function name(): string
+    {
+        return (string) config('rag.mcp.server.name', 'knowledge');
+    }
+
+    public function instructions(): string
+    {
+        $configured = config('rag.mcp.server.instructions');
+
+        return $configured === null || $configured === ''
+            ? (string) __('rag::rag.mcp.instructions')
+            : (string) $configured;
+    }
+}

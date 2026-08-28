@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Optional: set a Packagist API token as the PACKAGIST_TOKEN repo secret to
+      # force an immediate metadata sync. If the Packagist GitHub integration is
+      # installed on this repo the tag push already triggers it and this is a no-op.
+      PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+      PACKAGIST_USERNAME: murkrow
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          git fetch --tags --force
+          latest="$(git tag -l 'v*' --sort=-v:refname | head -n1)"
+
+          if [ -z "$latest" ]; then
+            next="v1.0.0"
+          else
+            version="${latest#v}"
+            major="${version%%.*}"
+            rest="${version#*.}"
+            minor="${rest%%.*}"
+            patch="${rest#*.}"
+            next="v${major}.${minor}.$((patch + 1))"
+          fi
+
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "HEAD is already tagged ($(git describe --tags --exact-match HEAD)); nothing to release."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Next release: $next"
+          fi
+
+      - name: Create and push tag
+        if: ${{ steps.version.outputs.skip == 'false' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.next }}" -m "Release ${{ steps.version.outputs.next }}"
+          git push origin "${{ steps.version.outputs.next }}"
+
+      - name: Create GitHub release
+        if: ${{ steps.version.outputs.skip == 'false' }}
+        run: |
+          gh release create "${{ steps.version.outputs.next }}" \
+            --title "${{ steps.version.outputs.next }}" \
+            --generate-notes \
+            ${{ steps.version.outputs.latest != '' && format('--notes-start-tag {0}', steps.version.outputs.latest) || '' }}
+
+      - name: Notify Packagist
+        if: ${{ steps.version.outputs.skip == 'false' && env.PACKAGIST_TOKEN != '' }}
+        run: |
+          curl -sf -XPOST -H 'content-type:application/json' \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -d '{"repository":{"url":"https://github.com/Murkrow02/laravel-rag"}}'

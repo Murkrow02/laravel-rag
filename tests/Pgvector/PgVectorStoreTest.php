@@ -1,0 +1,172 @@
+<?php
+
+declare(strict_types=1);
+
+use Murkrow\Rag\Contracts\EmbeddingProvider;
+use Murkrow\Rag\Contracts\Retriever;
+use Murkrow\Rag\Contracts\VectorStore;
+use Murkrow\Rag\Data\RetrievalOptions;
+use Murkrow\Rag\Data\VectorQuery;
+use Murkrow\Rag\Embeddings\VectorMath;
+use Murkrow\Rag\Facades\Rag;
+use Murkrow\Rag\Models\Chunk;
+use Murkrow\Rag\Support\Tables;
+use Murkrow\Rag\Tests\Fixtures\TestBook;
+use Illuminate\Support\Facades\DB;
+
+function seedPgLibrary(): TestBook
+{
+    $book = TestBook::create(['title' => 'Cronaca dell assedio']);
+
+    $book->pages()->create([
+        'number' => 1,
+        'content' => 'Il podesta convoco il consiglio generale. Le mura furono rinforzate e le porte sbarrate al tramonto. La popolazione si rifugio nella rocca centrale.',
+    ]);
+    $book->pages()->create([
+        'number' => 2,
+        'content' => 'Il grano venne razionato per tutto inverno successivo. I mercanti protestarono a lungo davanti al palazzo comunale della citta.',
+    ]);
+
+    Rag::ingestSync('books');
+
+    return $book;
+}
+
+it('installs a real vector column of the configured width', function (): void {
+    $column = DB::selectOne(
+        'SELECT atttypmod FROM pg_attribute
+         WHERE attrelid = ?::regclass AND attname = ?',
+        [Tables::chunks(), 'embedding'],
+    );
+
+    expect($column)->not->toBeNull()
+        ->and((int) $column->atttypmod)->toBe((int) config('rag.embeddings.dimensions'));
+});
+
+it('builds an HNSW index on the embedding column', function (): void {
+    $index = DB::selectOne(
+        'SELECT indexdef FROM pg_indexes WHERE tablename = ? AND indexdef ILIKE ?',
+        [Tables::chunks(), '%USING hnsw%'],
+    );
+
+    expect($index)->not->toBeNull()
+        ->and($index->indexdef)->toContain('vector_cosine_ops');
+});
+
+it('stores vectors that postgres can read back', function (): void {
+    seedPgLibrary();
+
+    $chunk = Chunk::query()->whereNotNull('embedded_at')->firstOrFail();
+
+    $vectors = app(VectorStore::class)->read([(int) $chunk->id]);
+
+    expect($vectors)->toHaveKey($chunk->id)
+        ->and($vectors[$chunk->id])->toHaveCount((int) config('rag.embeddings.dimensions'));
+
+    // Written normalised, so the norm must come back as 1.
+    $norm = sqrt(array_sum(array_map(static fn (float $v): float => $v * $v, $vectors[$chunk->id])));
+
+    expect($norm)->toEqualWithDelta(1.0, 1e-5);
+});
+
+it('ranks with the cosine operator and returns a usable score', function (): void {
+    seedPgLibrary();
+
+    $vector = app(EmbeddingProvider::class)->embedQuery('le mura e le porte della citta');
+
+    $hits = app(VectorStore::class)->search(new VectorQuery(vector: $vector, limit: 5));
+
+    expect($hits)->not->toBeEmpty();
+
+    $scores = $hits->pluck('score')->all();
+
+    expect($scores)->toBe(collect($scores)->sortDesc()->values()->all());
+
+    foreach ($scores as $score) {
+        expect($score)->toBeGreaterThanOrEqual(-1.0)->toBeLessThanOrEqual(1.0);
+    }
+});
+
+it('agrees with cosine similarity computed in php', function (): void {
+    seedPgLibrary();
+
+    $vector = app(EmbeddingProvider::class)->embedQuery('il grano razionato');
+
+    $hit = app(VectorStore::class)->search(new VectorQuery(vector: $vector, limit: 1))->first();
+
+    $stored = app(VectorStore::class)->read([$hit->chunkId])[$hit->chunkId];
+
+    expect($hit->score)->toEqualWithDelta(VectorMath::dot($vector, $stored), 1e-5);
+});
+
+it('applies filters inside the sql, not after ranking', function (): void {
+    $book = seedPgLibrary();
+
+    $vector = app(EmbeddingProvider::class)->embedQuery('citta');
+
+    $hits = app(VectorStore::class)->search(new VectorQuery(
+        vector: $vector,
+        limit: 10,
+        positionFrom: 2,
+        positionTo: 2,
+    ));
+
+    expect($hits)->not->toBeEmpty();
+
+    foreach ($hits as $hit) {
+        expect($hit->positionEnd)->toBeGreaterThanOrEqual(2)
+            ->and($hit->positionStart)->toBeLessThanOrEqual(2)
+            ->and($hit->externalId)->toBe((string) $book->id);
+    }
+});
+
+it('drops a vector without deleting its chunk', function (): void {
+    seedPgLibrary();
+
+    $chunk = Chunk::query()->whereNotNull('embedded_at')->firstOrFail();
+
+    app(VectorStore::class)->forget([(int) $chunk->id]);
+
+    $chunk->refresh();
+
+    expect($chunk->exists)->toBeTrue()
+        ->and($chunk->embedded_at)->toBeNull()
+        ->and(app(VectorStore::class)->read([(int) $chunk->id]))->toBe([]);
+});
+
+it('rebuilds the index on demand', function (): void {
+    seedPgLibrary();
+
+    $store = app(VectorStore::class);
+
+    $store->dropIndexes();
+
+    expect(DB::selectOne(
+        'SELECT indexdef FROM pg_indexes WHERE tablename = ? AND indexdef ILIKE ?',
+        [Tables::chunks(), '%USING hnsw%'],
+    ))->toBeNull();
+
+    $store->installIndexes($store->dimensions());
+
+    expect(DB::selectOne(
+        'SELECT indexdef FROM pg_indexes WHERE tablename = ? AND indexdef ILIKE ?',
+        [Tables::chunks(), '%USING hnsw%'],
+    ))->not->toBeNull();
+});
+
+it('runs the whole retrieval pipeline against postgres', function (): void {
+    seedPgLibrary();
+
+    $result = app(Retriever::class)->retrieve('mura e porte sbarrate', new RetrievalOptions(topK: 3));
+
+    expect($result->isEmpty())->toBeFalse()
+        ->and($result->chunks->count())->toBeLessThanOrEqual(3)
+        ->and($result->chunks->first()->documentTitle)->toBe('Cronaca dell assedio');
+});
+
+it('counts embedded chunks', function (): void {
+    seedPgLibrary();
+
+    expect(app(VectorStore::class)->countEmbedded())
+        ->toBe(Chunk::query()->whereNotNull('embedded_at')->count());
+});
