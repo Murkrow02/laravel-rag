@@ -51,7 +51,7 @@ class IngestionThroughputChart extends ChartWidget
         $labels = [];
         $values = [];
 
-        for ($cursor = $since->copy(); $cursor <= now(); $cursor->addHour()) {
+        for ($cursor = $since; $cursor <= now(); $cursor = $cursor->addHour()) {
             $key = $cursor->format('Y-m-d H');
             $labels[] = $cursor->format('H:i');
             $values[] = $counts[$key] ?? 0;

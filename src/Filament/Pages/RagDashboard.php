@@ -157,7 +157,7 @@ class RagDashboard extends Page
         $rows = [];
         $max = 1;
 
-        for ($cursor = $since->copy(); $cursor <= now(); $cursor->addHour()) {
+        for ($cursor = $since; $cursor <= now(); $cursor = $cursor->addHour()) {
             $key = $cursor->format('Y-m-d H');
             $count = (int) ($counts[$key] ?? 0);
             $max = max($max, $count);
@@ -185,7 +185,7 @@ class RagDashboard extends Page
         $rows = [];
         $max = 1;
 
-        for ($cursor = $since->copy(); $cursor <= now(); $cursor->addDay()) {
+        for ($cursor = $since; $cursor <= now(); $cursor = $cursor->addDay()) {
             $key = $cursor->format('Y-m-d');
 
             $ofDay = $queries->filter(

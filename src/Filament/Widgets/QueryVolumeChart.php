@@ -47,7 +47,7 @@ class QueryVolumeChart extends ChartWidget
         $refused = [];
         $labels = [];
 
-        for ($cursor = $since->copy(); $cursor <= now(); $cursor->addDay()) {
+        for ($cursor = $since; $cursor <= now(); $cursor = $cursor->addDay()) {
             $key = $cursor->format('Y-m-d');
             $labels[] = $cursor->format('d/m');
 

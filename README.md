@@ -363,7 +363,40 @@ Restrict what MCP can reach with `rag.mcp.sources`. An empty allow-list exposes 
 ->plugin(\Murkrow\Rag\Filament\RagPlugin::make())
 ```
 
-That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have.
+Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have. Then give the panel a theme -- see below, it is not optional.
+
+### The panel needs a custom theme
+
+The pages here are ordinary Blade views styled with Tailwind utilities. Filament ships a *precompiled* stylesheet that carries only its own semantic `fi-*` classes, so `grid-cols-4`, `text-sm`, `prose` and the rest are simply not in it. Without a theme of your own the Knowledge pages render as unstyled markup: nothing errors, no asset 404s, the page just looks broken.
+
+Build a panel theme whose Tailwind source includes this package's views:
+
+```bash
+php artisan make:filament-theme admin
+```
+
+Add one `@source` line to the generated `resources/css/filament/admin/theme.css`:
+
+```css
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+@source '../../../../vendor/murkrow/laravel-rag/resources/views/**/*';
+```
+
+Register it on the panel, then build:
+
+```php
+->viteTheme('resources/css/filament/admin/theme.css')
+```
+
+```bash
+npm run build
+```
+
+Two things that catch people out. `make:filament-theme` shells out to Node and aborts with `Node.js is not installed` if the machine running it has none -- which is normal when artisan runs inside a multi-stage container that only installs Node in the builder stage. The command does nothing you cannot do by hand: write the CSS above and add it to the `input` array in `vite.config.js` yourself. And the theme is a build artifact, so it has to be rebuilt on deploy like any other asset; a stale `public/build` shows the same unstyled pages.
+
 
 - **Overview** — documents, chunks, coverage, chunks awaiting embedding, stale vectors, spend to date, throughput and per-source coverage.
 - **Ingest knowledge** — pick a source, narrow it with the filters you declared, see the estimate, launch the run.
