@@ -1,4 +1,6 @@
 <x-filament-panels::page>
+    @include('rag::partials.styles')
+
     <form wire:submit="start">
         {{ $this->form }}
     </form>
@@ -11,7 +13,7 @@
                 magnitude rather than an invoice.
             </x-slot>
 
-            <dl class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <dl style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));">
                 @foreach ([
                     'Documents' => number_format((int) $estimate['documents']),
                     'Segments' => number_format((int) $estimate['segments']),
@@ -19,15 +21,15 @@
                     'Tokens' => '~' . number_format((int) $estimate['tokens']),
                 ] as $label => $value)
                     <div>
-                        <dt class="text-sm text-gray-500 dark:text-gray-400">{{ $label }}</dt>
-                        <dd class="text-lg font-semibold tabular-nums">{{ $value }}</dd>
+                        <dt style="font-size:.875rem;color:var(--rag-muted);">{{ $label }}</dt>
+                        <dd style="font-size:1.125rem;font-weight:600;font-variant-numeric:tabular-nums;">{{ $value }}</dd>
                     </div>
                 @endforeach
             </dl>
 
-            <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+            <p style="margin-top:1rem;font-size:.875rem;color:var(--rag-muted);">
                 Estimated embedding cost:
-                <span class="font-semibold text-gray-950 dark:text-white">
+                <span style="font-weight:600;color:var(--rag-strong);">
                     {{ \Murkrow\Rag\Ingestion\CostCalculator::format((int) $estimate['cost_micros'], 4) }}
                 </span>
                 using {{ config('rag.embeddings.model') }}.
@@ -38,7 +40,7 @@
     <x-filament::section collapsible collapsed>
         <x-slot name="heading">Before a large run</x-slot>
 
-        <ul class="list-inside list-disc space-y-1 text-sm text-gray-500 dark:text-gray-400">
+        <ul style="list-style:disc;padding-inline-start:1.25rem;font-size:.875rem;color:var(--rag-muted);">
             <li>
                 A worker must be consuming the
                 <code>{{ config('rag.queue.queue') }}</code> queue on the

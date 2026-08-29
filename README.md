@@ -363,51 +363,19 @@ Restrict what MCP can reach with `rag.mcp.sources`. An empty allow-list exposes 
 ->plugin(\Murkrow\Rag\Filament\RagPlugin::make())
 ```
 
-Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have. Then give the panel a theme -- see below, it is not optional.
+That is the whole installation. Add `'Knowledge'` to your panel's `navigationGroups()`, or point `rag.filament.navigation_group` at a group you already have.
 
-### The panel needs a custom theme
+### Styling
 
-The pages here are ordinary Blade views styled with Tailwind utilities. Filament ships a *precompiled* stylesheet that carries only its own semantic `fi-*` classes, so `grid-cols-4`, `text-sm`, `prose` and the rest are simply not in it. Without a theme of your own the Knowledge pages render as unstyled markup: nothing errors, no asset 404s, the page just looks broken.
+Nothing to build. The panel's pages are styled with Filament's own components
+and inline layout, so they use the stylesheet Filament already publishes -- no
+custom theme, no Tailwind config, no npm dependency in your application.
 
-Build a panel theme whose Tailwind source includes this package's views:
-
-```bash
-php artisan make:filament-theme admin
-```
-
-Add one `@source` line to the generated `resources/css/filament/admin/theme.css`:
-
-```css
-@import '../../../../vendor/filament/filament/resources/css/theme.css';
-
-@source '../../../../app/Filament/**/*';
-@source '../../../../resources/views/filament/**/*';
-@source '../../../../vendor/murkrow/laravel-rag/resources/views/**/*';
-```
-
-Register it on the panel, then build:
-
-```php
-->viteTheme('resources/css/filament/admin/theme.css')
-```
-
-```bash
-npm run build
-```
-
-Two things that catch people out. `make:filament-theme` shells out to Node and aborts with `Node.js is not installed` if the machine running it has none -- which is normal when artisan runs inside a multi-stage container that only installs Node in the builder stage. The command does nothing you cannot do by hand: write the CSS above and add it to the `input` array in `vite.config.js` yourself. And the theme is a build artifact, so it has to be rebuilt on deploy like any other asset; a stale `public/build` shows the same unstyled pages.
-
-
-- **Overview** — documents, chunks, coverage, chunks awaiting embedding, stale vectors, spend to date, throughput and per-source coverage.
-- **Ingest knowledge** — pick a source, narrow it with the filters you declared, see the estimate, launch the run.
-- **Ingestion runs** — live progress, per-document outcomes, cancel, retry failed jobs.
-- **Documents** — coverage per document, the chunks it produced, their page ranges, re-index on demand.
-- **Playground** — ask a question and see exactly what was retrieved: score, rank, page, and whether the model actually cited it.
-- **Settings** — retrieval and prompt tuning, editable at runtime.
-
-Every page and resource is individually switchable in config, and `rag.filament.authorize` takes a closure if the panel should not be open to everyone.
-
-Nothing polls unless an ingestion is actually running. That is deliberate: panels that use Laravel's `AuthenticateSession` middleware can have several simultaneously refreshing Livewire components race it into regenerating the session, which surfaces in the browser as a "Page Expired" loop. Set `rag.filament.poll_interval` to `null` to disable refreshing altogether.
+That constraint is why you will find inline `style` attributes and CSS
+variables (`var(--gray-500)`, `var(--primary-500)`) rather than utility classes
+in this package's views: Filament ships a precompiled stylesheet containing its
+semantic `fi-*` classes and nothing else, so a utility like `grid-cols-4` would
+not exist unless every host application built a theme for it.
 
 ---
 

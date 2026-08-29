@@ -5,6 +5,43 @@ declare(strict_types=1);
 return [
     'refusal' => 'I could not find this information in the indexed documents.',
 
+    'dashboard' => [
+        'no_sources' => 'No knowledge sources configured',
+        'no_sources_help' => 'Add at least one source under rag.sources in config/rag.php, mapping an Eloquent model to an ordered stream of text. Until then there is nothing to index.',
+
+        'documents' => 'Documents',
+        'chunks_count' => '{1} :count chunk|[2,*] :count chunks',
+        'coverage' => 'Coverage',
+        'coverage_note' => ':embedded of :total embedded',
+        'pending' => 'Awaiting embedding',
+        'pending_note' => 'Run an ingestion to finish',
+        'pending_none' => 'Nothing queued',
+        'stale' => 'Stale vectors',
+        'stale_note' => 'Embedded with another model',
+        'stale_none' => 'All current',
+        'spend' => 'Spend to date',
+        'spend_note' => ':queries queries, avg :ms ms',
+
+        'throughput' => 'Embedding throughput (last 24h)',
+        'throughput_help' => 'A flat line during a run means workers have stalled or the provider is throttling.',
+        'coverage_by_source' => 'Coverage by source',
+        'no_index' => 'No sources indexed yet.',
+
+        'questions_per_day' => 'Questions per day (last 30d)',
+        'answered' => 'Answered',
+        'refused' => 'Refused',
+
+        'recent_runs' => 'Recent ingestion runs',
+        'snapshot' => 'A snapshot taken when the page loaded. Reload to update it.',
+        'no_runs' => 'No runs yet.',
+        'source' => 'Source',
+        'status' => 'Status',
+        'progress' => 'Progress',
+        'embedded' => 'Embedded',
+        'cost' => 'Cost',
+        'started' => 'Started',
+    ],
+
     'mcp' => [
         'instructions' => <<<'TEXT'
             This server exposes a private, indexed knowledge base through semantic search.
@@ -27,6 +64,7 @@ return [
     ],
 
     'chat' => [
+        'forbidden' => 'You are not allowed to ask questions here.',
         'title' => 'Knowledge assistant',
         'untitled' => 'Untitled chat',
         'new_chat' => 'New chat',

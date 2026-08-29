@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Murkrow\Rag\Http\Requests;
 
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use Murkrow\Rag\Chat\ChatAbilities;
 use Murkrow\Rag\Data\RetrievalOptions;
@@ -28,6 +30,29 @@ class AskRequest extends FormRequest
     public function authorize(): bool
     {
         return ChatAbilities::allows('view', $this->user());
+    }
+
+    /**
+     * Always answer in JSON.
+     *
+     * The page calls this endpoint with `Accept: text/event-stream`, which
+     * Laravel does not count as expecting JSON, so a failed rule redirected
+     * back to the chat instead of reporting itself -- the browser saw a 302
+     * and the user saw nothing at all.
+     */
+    protected function failedValidation(Validator $validator): never
+    {
+        throw new HttpResponseException(response()->json([
+            'message' => $validator->errors()->first(),
+            'errors' => $validator->errors()->toArray(),
+        ], 422));
+    }
+
+    protected function failedAuthorization(): never
+    {
+        throw new HttpResponseException(response()->json([
+            'message' => __('rag::rag.chat.forbidden'),
+        ], 403));
     }
 
     /**
@@ -135,6 +160,17 @@ class AskRequest extends FormRequest
      */
     private function modelKeys(): array
     {
-        return array_keys((array) config('rag.llm.available_models', []));
+        $keys = array_keys((array) config('rag.llm.available_models', []));
+
+        // The model the application is actually configured to use is always
+        // acceptable, whether or not it was listed as a choice. Without this,
+        // an app that offers no alternatives rejects its own default.
+        $default = (string) config('rag.llm.model', '');
+
+        if ($default !== '' && ! in_array($default, $keys, true)) {
+            $keys[] = $default;
+        }
+
+        return $keys;
     }
 }

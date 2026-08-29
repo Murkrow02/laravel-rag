@@ -5,6 +5,43 @@ declare(strict_types=1);
 return [
     'refusal' => 'Non ho trovato questa informazione nei documenti indicizzati.',
 
+    'dashboard' => [
+        'no_sources' => 'Nessuna fonte configurata',
+        'no_sources_help' => 'Aggiungi almeno una fonte in rag.sources dentro config/rag.php, associando un model Eloquent a un flusso di testo ordinato. Finche non lo fai non c\'e nulla da indicizzare.',
+
+        'documents' => 'Documenti',
+        'chunks_count' => '{1} :count frammento|[2,*] :count frammenti',
+        'coverage' => 'Copertura',
+        'coverage_note' => ':embedded su :total con embedding',
+        'pending' => 'In attesa di embedding',
+        'pending_note' => 'Avvia un\'indicizzazione per completare',
+        'pending_none' => 'Nulla in coda',
+        'stale' => 'Vettori obsoleti',
+        'stale_note' => 'Creati con un altro modello',
+        'stale_none' => 'Tutti aggiornati',
+        'spend' => 'Spesa finora',
+        'spend_note' => ':queries domande, media :ms ms',
+
+        'throughput' => 'Embedding prodotti (ultime 24h)',
+        'throughput_help' => 'Una linea piatta durante un\'esecuzione significa che i worker sono fermi o che il provider sta limitando le richieste.',
+        'coverage_by_source' => 'Copertura per fonte',
+        'no_index' => 'Nessuna fonte ancora indicizzata.',
+
+        'questions_per_day' => 'Domande al giorno (ultimi 30gg)',
+        'answered' => 'Risposte',
+        'refused' => 'Rifiutate',
+
+        'recent_runs' => 'Ultime indicizzazioni',
+        'snapshot' => 'Fotografia al caricamento della pagina. Ricarica per aggiornarla.',
+        'no_runs' => 'Nessuna esecuzione.',
+        'source' => 'Fonte',
+        'status' => 'Stato',
+        'progress' => 'Avanzamento',
+        'embedded' => 'Con embedding',
+        'cost' => 'Costo',
+        'started' => 'Avviata',
+    ],
+
     'mcp' => [
         'instructions' => <<<'TEXT'
             Questo server espone una base di conoscenza privata e indicizzata tramite ricerca semantica.
@@ -27,6 +64,7 @@ return [
     ],
 
     'chat' => [
+        'forbidden' => 'Non hai i permessi per porre domande qui.',
         'title' => 'Chat',
         'untitled' => 'Chat senza titolo',
         'new_chat' => 'Nuova chat',

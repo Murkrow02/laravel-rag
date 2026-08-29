@@ -1,17 +1,18 @@
+@include('rag::partials.styles')
+
 @props(['run'])
 
 @php
     $percent = $run->progressPercent();
 @endphp
 
-<div class="w-40">
-    <div class="flex items-center justify-between text-xs tabular-nums">
+<div style="width:10rem;">
+    <div style="display:flex;justify-content:space-between;font-size:.75rem;font-variant-numeric:tabular-nums;">
         <span>{{ $percent }}%</span>
-        <span class="text-gray-500">{{ $run->status->label() }}</span>
+        <span style="color:var(--rag-muted);">{{ $run->status->label() }}</span>
     </div>
 
-    <div class="mt-1 h-1.5 w-full rounded bg-gray-100 dark:bg-white/10">
-        <div class="h-1.5 rounded bg-{{ $run->status->color() }}-500"
-             style="width: {{ max(2, $percent) }}%"></div>
+    <div style="margin-top:.25rem;height:.375rem;border-radius:.25rem;background:var(--rag-line);">
+        <div style="height:.375rem;border-radius:.25rem;background:var(--{{ $run->status->color() }}-500);width:{{ max(2, $percent) }}%"></div>
     </div>
 </div>

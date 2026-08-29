@@ -1,4 +1,6 @@
 <x-filament-panels::page>
+    @include('rag::partials.styles')
+
     <form wire:submit="save">
         {{ $this->form }}
     </form>
@@ -6,7 +8,7 @@
     <x-filament::section collapsible collapsed>
         <x-slot name="heading">What is not editable here, and why</x-slot>
 
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <p style="font-size:.875rem;color:var(--rag-muted);">
             The embedding model and its dimensions are missing from this form on purpose.
             Changing either invalidates every vector already stored, because vectors from
             two different models are not comparable and pgvector columns have a fixed

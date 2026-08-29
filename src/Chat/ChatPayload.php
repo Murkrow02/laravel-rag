@@ -32,6 +32,15 @@ final class ChatPayload
     {
         $allowed = ChatAbilities::allowed($user);
 
+        // Being allowed to pick a model means nothing when none are on offer.
+        // Left as-is, the page still sent the configured model with every
+        // question while the settings modal correctly hid the (empty) select,
+        // and the request was rejected because that model is not in the list
+        // it is validated against.
+        if (empty(config('rag.llm.available_models', []))) {
+            $allowed['model'] = false;
+        }
+
         return [
             'abilities' => $allowed,
             'persist' => $this->persists($allowed),
@@ -72,16 +81,20 @@ final class ChatPayload
      */
     private function endpoints(): array
     {
+        // Relative on purpose. Absolute URLs are built from APP_URL, so opening
+        // the app on any other host -- 127.0.0.1, a LAN address, a tunnel --
+        // sent these requests cross-origin, the session cookie was not attached
+        // and `auth` answered the question with a 302 to the login page.
         return [
-            'index' => route('rag.chat.index'),
-            'store' => route('rag.chat.store'),
+            'index' => route('rag.chat.index', [], false),
+            'store' => route('rag.chat.store', [], false),
             // ":uuid" is substituted in the browser; route() would percent-encode a placeholder.
-            'show' => route('rag.chat.show', ['conversation' => '__UUID__']),
-            'messages' => route('rag.chat.messages', ['conversation' => '__UUID__']),
-            'ask' => route('rag.chat.ask', ['conversation' => '__UUID__']),
-            'update' => route('rag.chat.update', ['conversation' => '__UUID__']),
-            'destroy' => route('rag.chat.destroy', ['conversation' => '__UUID__']),
-            'feedback' => route('rag.chat.feedback', ['query' => '__UUID__']),
+            'show' => route('rag.chat.show', ['conversation' => '__UUID__'], false),
+            'messages' => route('rag.chat.messages', ['conversation' => '__UUID__'], false),
+            'ask' => route('rag.chat.ask', ['conversation' => '__UUID__'], false),
+            'update' => route('rag.chat.update', ['conversation' => '__UUID__'], false),
+            'destroy' => route('rag.chat.destroy', ['conversation' => '__UUID__'], false),
+            'feedback' => route('rag.chat.feedback', ['query' => '__UUID__'], false),
         ];
     }
 

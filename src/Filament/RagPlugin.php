@@ -74,6 +74,20 @@ class RagPlugin implements Plugin
             return;
         }
 
+        $url = route('rag.chat.index');
+
+        // boot() runs on every panel boot, and a panel boots more than once per
+        // request -- every Livewire component mounted inside it boots it again.
+        // Panel::navigationItems() appends rather than replaces, so without this
+        // guard the sidebar accumulates one chat link per boot. Deduplicating
+        // against the panel's own items (rather than a static flag) keeps this
+        // correct under Octane, where the panel is rebuilt but statics persist.
+        foreach ($panel->getNavigationItems() as $item) {
+            if ($item->getUrl() === $url) {
+                return;
+            }
+        }
+
         // A panel in SPA mode puts wire:navigate on every in-app link, and
         // Livewire would then swap this page's body into the panel's document
         // -- the panel's <head>, none of the chat's. The chat has to be a real
@@ -91,7 +105,7 @@ class RagPlugin implements Plugin
                 ->icon('heroicon-o-chat-bubble-left-right')
                 ->group(fn () => config('rag.filament.navigation_group', 'Knowledge'))
                 ->sort((int) config('rag.filament.navigation_sort', 90) + 3)
-                ->url(fn (): string => route('rag.chat.index'))
+                ->url(fn () => $url)
                 ->visible(fn (): bool => ChatAbilities::allows('view')),
         ]);
     }

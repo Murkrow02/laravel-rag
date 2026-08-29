@@ -1,13 +1,15 @@
 <x-filament-panels::page>
+    @include('rag::partials.styles')
+
     <form wire:submit="run">
         {{ $this->form }}
 
-        <div class="mt-4 flex items-center gap-3">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-top:1rem;">
             <x-filament::button type="submit" icon="heroicon-o-play" wire:loading.attr="disabled">
                 Run
             </x-filament::button>
 
-            <span wire:loading wire:target="run" class="text-sm text-gray-500">
+            <span wire:loading wire:target="run" style="font-size:.875rem;color:var(--rag-muted);">
                 Retrieving...
             </span>
         </div>
@@ -16,7 +18,7 @@
     @if ($error)
         <x-filament::section>
             <x-slot name="heading">Error</x-slot>
-            <p class="text-sm text-danger-600 dark:text-danger-400">{{ $error }}</p>
+            <p style="font-size:.875rem;color:var(--danger-600);">{{ $error }}</p>
         </x-filament::section>
     @endif
 
@@ -36,7 +38,7 @@
                 $linkedAnswer = preg_replace('/\[#(\d+)\]/', '[#$1](#rag-passage-$1)', $answer);
             @endphp
 
-            <div class="prose prose-sm max-w-none dark:prose-invert">
+            <div class="rag-answer">
                 {!! \Illuminate\Support\Str::markdown($linkedAnswer, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
             </div>
         </x-filament::section>
@@ -50,7 +52,7 @@
                 actually referenced in the answer.
             </x-slot>
 
-            <div class="space-y-4">
+            <div style="display:flex;flex-direction:column;gap:1rem;">
                 @foreach ($passages as $passage)
                     <x-rag::chunk-card :passage="$passage" />
                 @endforeach
@@ -62,11 +64,31 @@
         <x-filament::section collapsible collapsed>
             <x-slot name="heading">Diagnostics</x-slot>
 
-            <pre class="overflow-x-auto text-xs">{{ json_encode($diagnostics, JSON_PRETTY_PRINT) }}</pre>
+            <pre style="overflow-x:auto;font-size:.75rem;">{{ json_encode($diagnostics, JSON_PRETTY_PRINT) }}</pre>
         </x-filament::section>
     @endif
 
     <style>
+        /* Markdown body. Replaces the Typography plugin so that installing this
+           package never drags a Tailwind plugin into the host application. */
+        .rag-answer { font-size: .875rem; line-height: 1.7; }
+        .rag-answer > :first-child { margin-top: 0; }
+        .rag-answer > :last-child { margin-bottom: 0; }
+        .rag-answer p, .rag-answer ul, .rag-answer ol, .rag-answer pre { margin: .75rem 0; }
+        .rag-answer ul, .rag-answer ol { padding-inline-start: 1.25rem; }
+        .rag-answer ul { list-style: disc; }
+        .rag-answer ol { list-style: decimal; }
+        .rag-answer li { margin: .25rem 0; }
+        .rag-answer h1, .rag-answer h2, .rag-answer h3 { font-weight: 600; margin: 1rem 0 .5rem; }
+        .rag-answer h1 { font-size: 1.125rem; }
+        .rag-answer h2 { font-size: 1rem; }
+        .rag-answer h3 { font-size: .9375rem; }
+        .rag-answer code { font-size: .8125rem; padding: .075rem .25rem; border-radius: .25rem; background: var(--rag-track); }
+        .rag-answer pre { padding: .75rem; border-radius: .5rem; overflow-x: auto; background: var(--rag-track); }
+        .rag-answer pre code { background: none; padding: 0; }
+        .rag-answer blockquote { margin: .75rem 0; padding-inline-start: .75rem; border-inline-start: 3px solid var(--rag-line); color: var(--rag-muted); }
+        .rag-answer a { color: var(--primary-600); text-decoration: underline; }
+
         @keyframes rag-passage-flash {
             0% { box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.9); background-color: rgba(250, 204, 21, 0.15); }
             100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); background-color: transparent; }
