@@ -83,6 +83,8 @@ body.rag-body,
   display: grid;
   grid-template-columns: var(--rag-sidebar) minmax(0, 1fr);
   height: 100dvh;
+  /* The two columns own their scrolling; the document itself never does. */
+  overflow: hidden;
   background: var(--rag-bg);
   color: var(--rag-text);
   font-size: 15px;
@@ -100,6 +102,8 @@ body.rag-body,
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* Same reason as .rag-main: .rag-threads scrolls only if this can shrink. */
+  min-height: 0;
   background: var(--rag-bg-sunken);
   border-right: 1px solid var(--rag-border);
   overflow: hidden;
@@ -176,7 +180,11 @@ body.rag-body,
 
 /* ------------------------------------------------------------------- main */
 
-.rag-main { display: flex; flex-direction: column; min-width: 0; position: relative; }
+/* min-height: 0 is load-bearing. A grid item defaults to min-height: auto and
+   so refuses to shrink below its content: a long thread pushed this column
+   past the 100dvh row, the whole document scrolled -- sidebar and all -- and
+   .rag-scroll never got a bounded height for its overflow to act on. */
+.rag-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; }
 
 .rag-topbar {
   display: flex; align-items: center; gap: 8px;
